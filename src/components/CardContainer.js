@@ -6,6 +6,7 @@ import {
   Link,
   CircularProgress,
   Image,
+  Grid,
 } from "@chakra-ui/react";
 import { useSwipeable } from "react-swipeable";
 import { Link as RouterLink } from "react-router-dom";
@@ -17,9 +18,12 @@ import {
   FaStar,
   FaBell,
   FaSlidersH,
+  FaUndo,
 } from "react-icons/fa";
 import HomeCard from "./HomeCard";
 import axios from "axios";
+import useScreenSize from "../hooks/useScreenSize";
+import SwipeNavigation from "./swipeNavigation";
 
 const CardContainer = () => {
   const [homes, setHomes] = useState([]);
@@ -27,6 +31,7 @@ const CardContainer = () => {
   const [loading, setLoading] = useState(true);
   const [viewedHomes, setViewedHomes] = useState([]); // Tracks viewed homes
   const [favorites, setFavorites] = useState([]); // Tracks favorite homes
+  const isDesktop = useScreenSize();
 
   useEffect(() => {
     axios
@@ -61,30 +66,37 @@ const CardContainer = () => {
 
   const handlers = useSwipeable({
     onSwipedLeft: () => handleNext(),
-    onSwipedRight: () => handleNext(),
+    onSwipedRight: () => handleFavorite(),
     preventDefaultTouchmoveEvent: true,
     trackMouse: true,
-    delta: 10, // Lower delta value to make swipe more sensitive
+    delta: 10, // Lowering delta value to make swipe more sensitive until I figure out which swipe library to use.
   });
 
   if (loading) {
     return <CircularProgress />;
   }
 
+  const currentHome = homes[index] || null;
+
   return (
-    <Box height="100vh" overflow="hidden" position="relative">
+    <Box height="100vh" position="relative">
       <Flex
+        position="absolute"
+        top="0"
+        left="0"
+        right="0"
         bg="white"
-        height="10%"
+        height="60px"
         alignItems="center"
         justifyContent="space-between"
         px={4}
+        zIndex="1"
       >
         <Link as={RouterLink} to="/" fontWeight="bold">
           <Image
             src="/2CasaLogo.png"
             alt="2Casa Logo"
-            boxSize="100px"
+            height="80px"
             objectFit="contain"
           />
         </Link>
@@ -102,52 +114,65 @@ const CardContainer = () => {
           />
         </Flex>
       </Flex>
-      <Box
-        {...handlers}
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        height="70%"
-      >
-        {homes.length > 0 ? (
-          <HomeCard home={homes[index]} />
-        ) : (
-          <Box textAlign="center" fontSize="xl">
-            No homes found!
+
+      {/* Desktop view: Grid layout */}
+      {isDesktop ? (
+        <Grid templateColumns="350px 1fr" height="100%">
+          {/* Left column */}
+          <Flex
+            direction="column"
+            borderRight="1px solid"
+            borderColor="gray.200"
+          >
+            <Box height="calc(100% - 80px)" overflow="hidden" {...handlers}>
+              <HomeCard home={currentHome} />
+            </Box>
+            <Box>
+              <SwipeNavigation
+                handleBack={handleBack}
+                handleNext={handleNext}
+                handleFavorite={handleFavorite}
+                viewedHomes={viewedHomes}
+              />
+            </Box>
+          </Flex>
+
+          {/* Right column */}
+          <Flex justifyContent="center" alignItems="center" bg="gray.100">
+            {currentHome && currentHome.photos && (
+              <Image
+                src={currentHome.photos[0]}
+                alt={`Home interior`}
+                maxHeight="90%"
+                maxWidth="90%"
+                objectFit="contain"
+              />
+            )}
+          </Flex>
+        </Grid>
+      ) : (
+        // Mobile view
+        <>
+          <Box
+            {...handlers}
+            position="absolute"
+            top="60px"
+            left="0"
+            right="0"
+            bottom="80px"
+          >
+            <HomeCard home={currentHome} />
+            <Flex justifyContent="center" alignItems="center" gap={4} py={4}>
+              <SwipeNavigation
+                handleBack={handleBack}
+                handleNext={handleNext}
+                handleFavorite={handleFavorite}
+                viewedHomes={viewedHomes}
+              />
+            </Flex>
           </Box>
-        )}
-      </Box>
-      <Flex justifyContent="center" gap={8} p={4} height="10%">
-        <IconButton
-          icon={<FaArrowLeft />}
-          colorScheme="yellow"
-          aria-label="Back"
-          size="lg"
-          onClick={handleBack}
-          isDisabled={viewedHomes.length === 0} // Disables if no homes are viewed
-        />
-        <IconButton
-          icon={<FaTimes />}
-          colorScheme="red"
-          aria-label="Dislike"
-          size="lg"
-          onClick={handleNext}
-        />
-        <IconButton
-          icon={<FaHeart />}
-          colorScheme="green"
-          aria-label="Like"
-          size="lg"
-          onClick={handleNext}
-        />
-        <IconButton
-          icon={<FaStar />}
-          colorScheme="blue"
-          aria-label="Favorite"
-          size="lg"
-          onClick={handleFavorite}
-        />
-      </Flex>
+        </>
+      )}
     </Box>
   );
 };

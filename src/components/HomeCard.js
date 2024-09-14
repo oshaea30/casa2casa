@@ -24,7 +24,7 @@ const HomeCard = ({ home }) => {
         bottom="0"
         w="100%"
         p={4}
-        bgGradient="linear(to-t, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.0))"
+        bgGradient="linear(to-t, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.0))"
         color="white"
         flexDirection="column"
       >
